@@ -1,0 +1,33 @@
+code
+changes.md
+codespace.excaildraw
+codespace.excalidraw
+codespace.html
+CodeSpace.html
+eks-deployment.html
+EKS-deployment.html
+project.md
+PROJECT.md
+resumr_project_description
+resume_project_description.md
+skills-lock.jso
+skills-lock.json
+
+# Secrets & env files
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+k8s/secrets.local.yml
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Docker
+docker-compose.override.yml
+
+# IDE / AI config
+.claude/
+.vscode/
