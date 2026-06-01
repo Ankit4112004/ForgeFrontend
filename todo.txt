@@ -1,0 +1,92 @@
+IMMEDIATE NEXT STEPS
+
+1. Set Up Your Local Minikube Cluster
+
+# Start Minikube with sufficient resources
+minikube start --driver=docker --cpus=4 --memory=8g
+
+# Enable the nginx ingress addon
+minikube addons enable ingress
+
+# Point Docker to Minikube's registry
+& minikube -p minikube docker-env --shell powershell | Invoke-Expression
+
+2. Create Local Secrets File
+
+# Copy the template
+cp k8s/secrets.yml k8s/secrets.local.yml
+
+# Edit with your actual credentials:
+# - MongoDB connection strings (local or Atlas)
+# - Redis URL (local or cloud)
+# - RabbitMQ URL (local or cloud)
+# - Google OAuth credentials
+# - MistralAI API key
+# - JWT secret
+# - AWS credentials (if using sync-agent)
+
+notepad k8s/secrets.local.yml
+
+3. Fix the Critical Bug
+
+In your k8s deployments, the AI service expects MISTRAL_API_KEY but the code reads MISTRALAI_API_KEY. Fix this:
+- Either update k8s/ai-deployment.yml to use the correct env var name, OR
+- Update ai-orchestration/ code to match
+
+4. Apply Kubernetes Configurations
+
+# Apply the local secrets
+kubectl apply -f k8s/secrets.local.yml
+
+# Apply RBAC (required for sandbox pod creation)
+kubectl apply -f k8s/rbac.yml
+
+5. Start Skaffold
+
+# Navigate to project root
+cd C:\Users\priya\Desktop\capstone
+
+# Run skaffold in dev mode (builds images, deploys manifests, watches changes)
+skaffold dev
+
+6. Start the Frontend (in a new PowerShell terminal)
+
+cd frontend
+npm install
+npm run dev
+# → http://localhost:5173
+
+7. Configure DNS for Sandbox Subdomains (Windows-specific)
+
+Sandbox previews need {id}.preview.localhost routing. On Windows:
+
+Option A - Manual hosts entries (when you create a sandbox):
+notepad C:\Windows\System32\drivers\etc\hosts
+# Add entries like:
+192.168.49.2  019e1234.preview.localhost
+192.168.49.2  019e1234.agent.localhost
+(Replace 192.168.49.2 with your minikube IP from minikube ip)
+
+Option B - Use Acrylic DNS Proxy (supports wildcards):
+Install from https://www.acrylic.dns and configure for *.localhost
+
+---
+TESTING & VALIDATION
+
+Once everything is running:
+
+1. Verify all pods are running:
+kubectl get pods
+# Should show: auth-deployment, ai-deployment, sandbox-deployment, router-deployment, notification-deployment
+2. Check service health:
+kubectl get svc
+# All should have CLUSTER-IP assigned
+3. Test in browser:
+  - Open http://localhost:5173
+  - Click "Create Sandbox"
+  - Verify you get a sandbox ID back
+  - Try opening the preview URL (if DNS is configured)
+4. Check logs:
+# View logs from any service
+kubectl logs -f deployment/auth-deployment
+kubectl logs -f deployment/sandbox-deployment

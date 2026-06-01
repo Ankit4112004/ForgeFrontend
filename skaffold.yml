@@ -7,7 +7,7 @@ build:
     
   artifacts:
   
-  - image: 329599656829.dkr.ecr.ap-southeast-1.amazonaws.com/ai-orchestration
+  - image: ai-orchestration
     context: ai-orchestration
     docker:
       dockerfile: dockerfile
@@ -15,7 +15,7 @@ build:
       infer:
         - "src/**"
 
-  - image: 329599656829.dkr.ecr.ap-southeast-1.amazonaws.com/auth
+  - image: auth
     context: auth
     docker:
       dockerfile: dockerfile
@@ -23,7 +23,7 @@ build:
       infer:
         - "src/**"
         
-  - image: 329599656829.dkr.ecr.ap-southeast-1.amazonaws.com/notification
+  - image: notification
     context: notification
     docker:
       dockerfile: dockerfile
@@ -31,27 +31,27 @@ build:
       infer:
         - "src/**"      
 
-  - image: 329599656829.dkr.ecr.ap-southeast-1.amazonaws.com/agent
+  - image: agent
     context: sandbox/agent
     docker:
       dockerfile: dockerfile
 
-  - image: 329599656829.dkr.ecr.ap-southeast-1.amazonaws.com/sync-agent
+  - image: sync-agent
     context: sandbox/sync-agent
     docker:
       dockerfile: dockerfile
 
-  - image: 329599656829.dkr.ecr.ap-southeast-1.amazonaws.com/router
+  - image: router
     context: sandbox/router
     docker:
       dockerfile: dockerfile
 
-  - image: 329599656829.dkr.ecr.ap-southeast-1.amazonaws.com/sandbox
+  - image: sandbox
     context: sandbox/server
     docker:
       dockerfile: dockerfile
 
-  - image: 329599656829.dkr.ecr.ap-southeast-1.amazonaws.com/template
+  - image: template
     context: sandbox/template
     docker:
       dockerfile: dockerfile
