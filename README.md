@@ -28,6 +28,3 @@ Forge is a browser-based IDE where you spin up isolated coding sandboxes and hav
 | `notification/` | Email notifications |
 | `k8s/` | Kubernetes manifests |
 
-## Running locally
-
-Runs on a Minikube cluster via Skaffold (`skaffold dev`) with the frontend on Vite (`npm run dev`). Requires a `k8s/secrets.yml` with your own credentials (MongoDB, Redis, Google OAuth, Mistral API key).
