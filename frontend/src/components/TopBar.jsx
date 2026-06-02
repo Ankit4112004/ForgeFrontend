@@ -1,4 +1,4 @@
-export default function TopBar({ sandboxId, activeTab, onTabChange, status, onLogout }) {
+export default function TopBar({ sandboxId, activeTab, onTabChange, status, onLogout, onDownloadZip, onCloseProject }) {
   const shortId = sandboxId ? sandboxId.slice(0, 8) + '…' : ''
 
   const statusConfig = {
@@ -76,6 +76,30 @@ export default function TopBar({ sandboxId, activeTab, onTabChange, status, onLo
           )}
           <span className="text-xs" style={{ color: s.color }}>{s.label}</span>
         </div>
+        {onDownloadZip && (
+          <button 
+            onClick={onDownloadZip}
+            className="px-3 py-1 text-xs font-medium rounded-md cursor-pointer transition-colors hover:text-white"
+            style={{
+              color: '#94a3b8',
+              background: 'rgba(34, 211, 238, 0.1)',
+              border: '1px solid rgba(34, 211, 238, 0.2)'
+            }}>
+            Download ZIP
+          </button>
+        )}
+        {onCloseProject && (
+          <button 
+            onClick={onCloseProject}
+            className="px-3 py-1 text-xs font-medium rounded-md cursor-pointer transition-colors hover:text-white ml-2"
+            style={{
+              color: '#94a3b8',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)'
+            }}>
+            Close Project
+          </button>
+        )}
         {onLogout && (
           <button 
             onClick={onLogout}

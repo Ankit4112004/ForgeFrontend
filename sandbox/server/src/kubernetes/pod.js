@@ -144,3 +144,15 @@ export async function deletePod(sandboxId) {
         return null;
     }
 }
+
+export async function checkPodExists(sandboxId) {
+    try {
+        const response = await k8sCoreV1Api.readNamespacedPod({
+            name: `sandbox-pod-${sandboxId}`,
+            namespace: 'default'
+        });
+        return response !== null;
+    } catch (err) {
+        return false;
+    }
+}

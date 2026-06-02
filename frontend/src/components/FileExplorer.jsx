@@ -1,18 +1,23 @@
 import { useState, useEffect, useCallback } from 'react'
+import { motion } from 'framer-motion'
+import { ChevronRight, Folder, FolderOpen, FileCode, FileJson, FileText, Image, File as FileIcon, Shield, Code, Settings } from 'lucide-react'
 
-const FILE_ICONS = {
-  jsx: '⚛', tsx: '⚛', js: '🟡', ts: '🔷',
-  css: '🎨', html: '🌐', json: '{}', md: '📝',
-  png: '🖼', svg: '🔶', jpg: '🖼', jpeg: '🖼',
-  env: '🔒', gitignore: '🙈', dockerfile: '🐳',
-  default: '📄'
-}
-
-function getIcon(filename) {
-  const parts = filename.split('.')
-  if (parts.length === 1) return FILE_ICONS.default
-  const ext = parts[parts.length - 1].toLowerCase()
-  return FILE_ICONS[ext] || FILE_ICONS.default
+const getIcon = (filename, isOpen = false) => {
+  const ext = filename.split('.').pop().toLowerCase()
+  if (filename.includes('.')) {
+    switch (ext) {
+      case 'jsx': case 'js': case 'ts': case 'tsx': return <Code size={14} className="text-yellow-400" />
+      case 'json': return <FileJson size={14} className="text-green-400" />
+      case 'css': return <FileCode size={14} className="text-blue-400" />
+      case 'html': return <FileCode size={14} className="text-orange-400" />
+      case 'md': return <FileText size={14} className="text-gray-300" />
+      case 'png': case 'jpg': case 'jpeg': case 'svg': return <Image size={14} className="text-purple-400" />
+      case 'env': return <Shield size={14} className="text-red-400" />
+      case 'gitignore': return <Settings size={14} className="text-gray-400" />
+      default: return <FileIcon size={14} className="text-gray-400" />
+    }
+  }
+  return isOpen ? <FolderOpen size={14} className="text-blue-400" /> : <Folder size={14} className="text-blue-400" />
 }
 
 function buildTree(files) {
@@ -36,22 +41,20 @@ function TreeNode({ name, node, depth, agentBase, activeFile, onFileSelect, path
 
   if (isDir) {
     return (
-      <div>
-        <button onClick={() => setOpen(o => !o)}
-          className="flex items-center gap-1.5 w-full text-left px-2 py-0.5 rounded transition-colors duration-100 cursor-pointer"
-          style={{
-            paddingLeft: `${8 + depth * 14}px`,
-            color: '#94a3b8',
-            fontSize: '13px'
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-          <span className="text-xs transition-transform duration-150" style={{ transform: open ? 'rotate(90deg)' : 'none', display: 'inline-block' }}>▶</span>
-          <span className="mr-1">{open ? '📂' : '📁'}</span>
+      <div className="select-none">
+        <motion.button 
+          whileHover={{ x: 2, backgroundColor: 'rgba(255,255,255,0.05)' }}
+          onClick={() => setOpen(o => !o)}
+          className="flex items-center gap-1.5 w-full text-left py-1 rounded-md transition-colors duration-200 cursor-pointer text-gray-400 hover:text-gray-200"
+          style={{ paddingLeft: `${8 + depth * 12}px`, fontSize: '13px' }}>
+          <motion.div animate={{ rotate: open ? 90 : 0 }} transition={{ duration: 0.15 }}>
+            <ChevronRight size={14} />
+          </motion.div>
+          {getIcon(name, open)}
           <span className="truncate">{name}</span>
-        </button>
+        </motion.button>
         {open && (
-          <div>
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} transition={{ duration: 0.2 }}>
             {Object.entries(node).sort(([, a], [, b]) => {
               const aDir = a !== null && typeof a === 'object'
               const bDir = b !== null && typeof b === 'object'
@@ -61,27 +64,26 @@ function TreeNode({ name, node, depth, agentBase, activeFile, onFileSelect, path
                 depth={depth + 1} agentBase={agentBase} activeFile={activeFile}
                 onFileSelect={onFileSelect} path={fullPath} />
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
     )
   }
 
   return (
-    <button onClick={() => onFileSelect(fullPath)}
-      className="flex items-center gap-1.5 w-full text-left px-2 py-0.5 rounded transition-all duration-100 cursor-pointer"
+    <motion.button 
+      whileHover={{ x: 2, backgroundColor: isActive ? 'var(--accent-glow)' : 'rgba(255,255,255,0.04)' }}
+      onClick={() => onFileSelect(fullPath)}
+      className="flex items-center gap-1.5 w-full text-left py-1 rounded-md transition-colors duration-200 cursor-pointer select-none"
       style={{
-        paddingLeft: `${8 + depth * 14}px`,
+        paddingLeft: `${8 + depth * 12}px`,
         fontSize: '13px',
-        color: isActive ? '#22d3ee' : '#94a3b8',
-        background: isActive ? 'rgba(34,211,238,0.08)' : 'transparent',
-        borderLeft: isActive ? '2px solid #22d3ee' : '2px solid transparent'
-      }}
-      onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#e2e8f0' } }}
-      onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#94a3b8' } }}>
-      <span>{getIcon(name)}</span>
+        color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
+        background: isActive ? 'var(--accent-glow)' : 'transparent',
+      }}>
+      {getIcon(name)}
       <span className="truncate">{name}</span>
-    </button>
+    </motion.button>
   )
 }
 
@@ -121,19 +123,15 @@ export default function FileExplorer({ agentBase, activeFile, onFileSelect, refr
   }, [fetchFiles, refreshKey])
 
   return (
-    <aside className="flex flex-col h-full"
-      style={{ width: '220px', minWidth: '220px', background: '#0d1424', borderRight: '1px solid #1e2d45' }}>
+    <aside className="flex flex-col h-full w-full">
       
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 shrink-0"
-        style={{ borderBottom: '1px solid #1e2d45' }}>
-        <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#475569' }}>
+      <div className="flex items-center justify-between px-3 py-2 shrink-0 border-b"
+        style={{ borderColor: 'var(--border)' }}>
+        <span className="text-xs font-semibold uppercase tracking-widest text-gray-500">
           Explorer
         </span>
-        <button onClick={fetchFiles} className="p-1 rounded transition-colors cursor-pointer"
-          style={{ color: '#475569' }}
-          onMouseEnter={e => e.currentTarget.style.color = '#22d3ee'}
-          onMouseLeave={e => e.currentTarget.style.color = '#475569'}
+        <button onClick={fetchFiles} className="p-1 rounded transition-colors cursor-pointer text-gray-500 hover:text-gray-300"
           title="Refresh">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M23 4v6h-6M1 20v-6h6"/>
@@ -147,13 +145,13 @@ export default function FileExplorer({ agentBase, activeFile, onFileSelect, refr
         {loading ? (
           <div className="absolute inset-0 flex flex-col items-center pt-20 gap-4 opacity-80">
             <div className="relative w-8 h-8 flex items-center justify-center">
-              <div className="absolute inset-0 rounded-md border border-cyan-500 animate-ping opacity-20" />
-              <div className="absolute inset-1 rounded border border-cyan-400 animate-pulse opacity-50" />
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="2" className="animate-bounce">
+              <div className="absolute inset-0 rounded-md border animate-ping opacity-20" style={{ borderColor: 'var(--accent)' }} />
+              <div className="absolute inset-1 rounded border animate-pulse opacity-50" style={{ borderColor: 'var(--accent)' }} />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" className="animate-bounce">
                 <path d="M2 12h4l2-3 4 6 2-3h4" />
               </svg>
             </div>
-            <span className="text-[10px] font-mono text-cyan-400 uppercase tracking-widest animate-pulse">
+            <span className="text-[10px] font-mono uppercase tracking-widest animate-pulse" style={{ color: 'var(--accent)' }}>
               Mounting Vol...
             </span>
           </div>
@@ -174,8 +172,8 @@ export default function FileExplorer({ agentBase, activeFile, onFileSelect, refr
 
       {/* Footer — file count */}
       {!loading && files.length > 0 && (
-        <div className="px-3 py-1.5 shrink-0" style={{ borderTop: '1px solid #1e2d45' }}>
-          <span className="text-xs" style={{ color: '#334155' }}>{files.length} files</span>
+        <div className="px-3 py-1.5 shrink-0 border-t" style={{ borderColor: 'var(--border)' }}>
+          <span className="text-xs text-gray-500">{files.length} files</span>
         </div>
       )}
     </aside>

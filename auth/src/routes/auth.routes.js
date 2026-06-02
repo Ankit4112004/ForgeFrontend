@@ -56,6 +56,21 @@ router.get('/google/callback', passport.authenticate('google', {
     }
 });
 
+router.get('/me', async (req, res) => {
+    try {
+        const token = req.cookies?.token;
+        if (!token) return res.status(401).json({ error: 'Not authenticated' });
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id).select('name email avatar');
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        res.json({ name: user.name, email: user.email, avatar: user.avatar });
+    } catch (err) {
+        res.status(401).json({ error: 'Invalid token' });
+    }
+});
+
 router.get('/logout', (req, res) => {
     res.clearCookie('token', {
         httpOnly: true,

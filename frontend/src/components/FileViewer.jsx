@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Editor from '@monaco-editor/react'
 
 const LANGUAGE_MAP = {
   js: 'javascript', jsx: 'javascript', ts: 'typescript', tsx: 'typescript',
@@ -13,7 +14,9 @@ function getLanguage(filename) {
 
 export default function FileViewer({ agentBase, filePath }) {
   const [content, setContent] = useState(null)
+  const [editedContent, setEditedContent] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
   useEffect(() => {
@@ -22,6 +25,7 @@ export default function FileViewer({ agentBase, filePath }) {
       setLoading(true)
       setError(null)
       setContent(null)
+      setEditedContent(null)
       try {
         const res = await fetch(`${agentBase}/read-files?files=${encodeURIComponent(filePath)}`)
         const data = await res.json()
@@ -29,6 +33,7 @@ export default function FileViewer({ agentBase, filePath }) {
         if (fileData) {
           const fileContent = Object.values(fileData)[0]
           setContent(fileContent)
+          setEditedContent(fileContent)
         } else {
           setError('File not found or empty')
         }
@@ -40,6 +45,27 @@ export default function FileViewer({ agentBase, filePath }) {
     }
     fetchFile()
   }, [agentBase, filePath])
+
+  const handleSave = async () => {
+    if (!agentBase || !filePath || content === editedContent) return
+    setSaving(true)
+    try {
+      const res = await fetch(`${agentBase}/update-files`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          updates: [{ file: filePath, content: editedContent }]
+        })
+      })
+      if (res.ok) {
+        setContent(editedContent)
+      }
+    } catch (err) {
+      console.error('Save failed', err)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   if (!filePath) {
     return (
@@ -57,18 +83,33 @@ export default function FileViewer({ agentBase, filePath }) {
   return (
     <div className="flex flex-col h-full">
       {/* File tab bar */}
-      <div className="flex items-center gap-2 px-3 shrink-0"
+      <div className="flex items-center justify-between px-3 shrink-0"
         style={{ height: '36px', background: '#070b14', borderBottom: '1px solid #1e2d45' }}>
         <div className="flex items-center gap-2 px-3 py-1 rounded-t"
           style={{ background: '#0d1424', border: '1px solid #1e2d45', borderBottom: 'none', marginBottom: '-1px' }}>
           <span className="text-xs" style={{ color: '#94a3b8' }}>
             {filePath.split('/').pop()}
           </span>
+          {editedContent !== null && content !== editedContent && (
+             <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#22d3ee' }} title="Unsaved changes"></span>
+          )}
           <span className="text-xs px-1 rounded"
             style={{ background: 'rgba(34,211,238,0.08)', color: '#475569' }}>
             {getLanguage(filePath)}
           </span>
         </div>
+        {editedContent !== null && content !== editedContent && (
+          <button 
+            onClick={handleSave}
+            disabled={saving}
+            className="px-3 py-0.5 text-xs font-medium rounded transition-colors cursor-pointer"
+            style={{ background: 'rgba(34,211,238,0.1)', color: '#22d3ee', border: '1px solid rgba(34,211,238,0.2)' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(34,211,238,0.2)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(34,211,238,0.1)'}
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+        )}
       </div>
 
       {/* Content */}
@@ -83,10 +124,21 @@ export default function FileViewer({ agentBase, filePath }) {
           <div className="p-6 text-sm" style={{ color: '#ef4444' }}>{error}</div>
         )}
         {content !== null && !loading && (
-          <pre className="p-4 text-xs leading-relaxed overflow-auto h-full"
-            style={{ color: '#94a3b8', fontFamily: '"JetBrains Mono", "Fira Code", monospace', margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-            <code>{content}</code>
-          </pre>
+          <Editor
+            height="100%"
+            theme="vs-dark"
+            path={filePath}
+            defaultLanguage={getLanguage(filePath)}
+            value={editedContent}
+            onChange={(val) => setEditedContent(val || '')}
+            options={{
+              minimap: { enabled: false },
+              fontSize: 13,
+              fontFamily: '"JetBrains Mono", "Fira Code", monospace',
+              wordWrap: 'on',
+              padding: { top: 16 }
+            }}
+          />
         )}
       </div>
     </div>

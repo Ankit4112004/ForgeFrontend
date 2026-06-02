@@ -3,6 +3,7 @@ import { Terminal as XTerm } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { WebLinksAddon } from '@xterm/addon-web-links'
 import { io } from 'socket.io-client'
+import { TerminalSquare, RefreshCw } from 'lucide-react'
 
 export default function Terminal({ sandboxId }) {
   const containerRef = useRef(null)
@@ -18,27 +19,27 @@ export default function Terminal({ sandboxId }) {
 
     const term = new XTerm({
       theme: {
-        background: '#070b14',
-        foreground: '#e2e8f0',
-        cursor: '#22d3ee',
-        cursorAccent: '#070b14',
-        selectionBackground: 'rgba(34,211,238,0.2)',
-        black: '#1e2d45',
-        red: '#ef4444',
-        green: '#10b981',
-        yellow: '#f59e0b',
-        blue: '#3b82f6',
-        magenta: '#a78bfa',
-        cyan: '#22d3ee',
-        white: '#e2e8f0',
-        brightBlack: '#334155',
-        brightRed: '#f87171',
-        brightGreen: '#34d399',
-        brightYellow: '#fbbf24',
-        brightBlue: '#60a5fa',
-        brightMagenta: '#c4b5fd',
-        brightCyan: '#67e8f9',
-        brightWhite: '#f8fafc',
+        background: '#0d1117', // Warp dark background
+        foreground: '#e6edf3',
+        cursor: '#f97316', // Orange cursor
+        cursorAccent: '#0d1117',
+        selectionBackground: 'rgba(249,115,22,0.3)',
+        black: '#484f58',
+        red: '#ff7b72',
+        green: '#3fb950',
+        yellow: '#d29922',
+        blue: '#58a6ff',
+        magenta: '#bc8cff',
+        cyan: '#39c5cf',
+        white: '#b1bac4',
+        brightBlack: '#6e7681',
+        brightRed: '#ffa198',
+        brightGreen: '#56d364',
+        brightYellow: '#e3b341',
+        brightBlue: '#79c0ff',
+        brightMagenta: '#d2a8ff',
+        brightCyan: '#56d4dd',
+        brightWhite: '#ffffff',
       },
       fontFamily: '"JetBrains Mono", "Fira Code", "Cascadia Code", monospace',
       fontSize: 13,
@@ -59,8 +60,11 @@ export default function Terminal({ sandboxId }) {
     termRef.current = term
     fitAddonRef.current = fitAddon
 
-    term.writeln('\x1b[1m\x1b[36mWelcome to Sandbox Terminal\x1b[0m')
-    term.writeln('\x1b[90mPowered by AI • Isolated Runtime\x1b[0m')
+    // Warp-style welcome block
+    term.writeln('\x1b[38;2;249;115;22m╭──────────────────────────────────────────╮\x1b[0m')
+    term.writeln('\x1b[38;2;249;115;22m│\x1b[0m \x1b[1m\x1b[38;2;255;255;255mSandbox IDE Terminal\x1b[0m                     \x1b[38;2;249;115;22m│\x1b[0m')
+    term.writeln('\x1b[38;2;249;115;22m│\x1b[0m \x1b[90mPowered by AI • Isolated Runtime\x1b[0m         \x1b[38;2;249;115;22m│\x1b[0m')
+    term.writeln('\x1b[38;2;249;115;22m╰──────────────────────────────────────────╯\x1b[0m')
     term.writeln('')
 
     return term
@@ -83,7 +87,6 @@ export default function Terminal({ sandboxId }) {
       let dots = 0;
       const animateConnecting = () => {
         const dotStr = '.'.repeat(dots % 4);
-        // \r goes to start of line, \x1b[K clears line to the right
         term.write(`\r\x1b[K\x1b[33mConnecting to sandbox${dotStr}\x1b[0m`);
         dots++;
       };
@@ -96,7 +99,6 @@ export default function Terminal({ sandboxId }) {
         setConnected(true)
         setError(null)
         term.write('\r\x1b[K\x1b[32m✓ Connected to sandbox shell\x1b[0m\r\n\n')
-        // Send a carriage return to force bash to print the prompt immediately
         socket.emit('terminal-input', '\r')
       })
 
@@ -110,7 +112,6 @@ export default function Terminal({ sandboxId }) {
       socket.on('connect_error', (err) => {
         setConnected(false)
         setError('Connection failed')
-        // We do NOT write the error to the terminal. The animation continues running.
       })
 
       socket.on('terminal-output', (data) => {
@@ -137,7 +138,6 @@ export default function Terminal({ sandboxId }) {
     }
   }, [initTerminal, connectSocket])
 
-  // Handle resize
   useEffect(() => {
     const observer = new ResizeObserver(() => {
       if (fitAddonRef.current) {
@@ -149,34 +149,25 @@ export default function Terminal({ sandboxId }) {
   }, [])
 
   return (
-    <div className="flex flex-col h-full"
-      style={{ background: '#070b14' }}>
-
-      {/* Terminal toolbar */}
-      <div className="flex items-center justify-between px-3 shrink-0"
-        style={{ height: '32px', background: '#0d1424', borderBottom: '1px solid #1e2d45' }}>
+    <div className="flex flex-col h-full rounded-b-xl overflow-hidden bg-[#0d1117]">
+      {/* Warp-style tab bar */}
+      <div className="flex items-center justify-between px-3 py-1.5 shrink-0 bg-white/5 border-b border-white/10">
         <div className="flex items-center gap-2">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
-            <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
-          </svg>
-          <span className="text-xs font-medium" style={{ color: '#475569' }}>Terminal</span>
+          <TerminalSquare size={14} className="text-gray-400" />
+          <span className="text-xs font-medium text-gray-300">Terminal</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {error && (
-            <span className="text-xs" style={{ color: '#ef4444' }}>{error}</span>
+            <span className="text-xs text-red-400">{error}</span>
           )}
-          <div className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 rounded-full"
-              style={{ background: connected ? '#10b981' : '#ef4444', boxShadow: `0 0 6px ${connected ? '#10b981' : '#ef4444'}` }} />
-            <span className="text-xs" style={{ color: '#475569' }}>
-              {connected ? 'Connected' : 'Disconnected'}
-            </span>
+          <div className="flex items-center gap-1.5 bg-black/20 px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider" style={{ color: connected ? '#10b981' : '#f59e0b' }}>
+            {connected ? 'Connected' : 'Connecting'}
+            {!connected && <RefreshCw size={10} className="animate-spin" />}
           </div>
         </div>
       </div>
 
-      {/* xterm container */}
-      <div ref={containerRef} className="flex-1 overflow-hidden" />
+      <div ref={containerRef} className="flex-1 overflow-hidden p-1" />
     </div>
   )
 }

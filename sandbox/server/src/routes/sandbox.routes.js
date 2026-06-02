@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createPod, deletePod } from '../kubernetes/pod.js';
+import { createPod, deletePod, checkPodExists } from '../kubernetes/pod.js';
 import { createService, deleteService } from '../kubernetes/service.js';
 import { createSandboxKey } from '../config/redis.js';
 import { v7 as uuid } from "uuid"
@@ -40,11 +40,14 @@ router.post("/start", async (req, res) => {
     }
 
     if (project.sandboxId) {
-        return res.status(200).json({
-            message: 'Sandbox environment already running',
-            sandboxId: project.sandboxId,
-            previewUrl: `http://${project.sandboxId}.preview.localhost:8080`
-        });
+        const podExists = await checkPodExists(project.sandboxId);
+        if (podExists) {
+            return res.status(200).json({
+                message: 'Sandbox environment already running',
+                sandboxId: project.sandboxId,
+                previewUrl: `http://${project.sandboxId}.preview.localhost:8080`
+            });
+        }
     }
 
     const sandboxId = uuid();

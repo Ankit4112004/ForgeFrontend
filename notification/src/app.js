@@ -28,9 +28,21 @@ channel.consume('auth_notification_queue', async (msg) => {
         try {
             const { userId, timestamp, email } = JSON.parse(messageContent);
             
-            const subject = 'New Login Notification';
-            const text = `A new login was detected for your account at ${timestamp}. If this was not you, please secure your account immediately.`;
-            const html = `<p>A new login was detected for your account at <strong>${timestamp}</strong>. If this was not you, please secure your account immediately.</p>`;
+            const dateStr = new Date(timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', timeZoneName: 'short' });
+            const subject = '🚨 Security Alert: New Login to Sandbox IDE';
+            const text = `A new login was detected for your Sandbox IDE account at ${dateStr}. If this was not you, please secure your account immediately.`;
+            const html = `
+            <h3>Security Alert</h3>
+            <p>Hello,</p>
+            <p>We detected a new login to your <strong>Sandbox IDE</strong> account.</p>
+            <ul>
+                <li><strong>Time:</strong> <strong>${dateStr}</strong></li>
+                <li><strong>Account:</strong> <a href="mailto:${email}">${email}</a></li>
+            </ul>
+            <p>If this was you, you can safely ignore this email.</p>
+            <p><strong>If you did not authorize this login, please secure your account immediately.</strong></p>
+            <br/>
+            <p><small>Sandbox IDE &bull; Powered by AI</small></p>`;
 
             await sendEmail(email, subject, text, html);
             
