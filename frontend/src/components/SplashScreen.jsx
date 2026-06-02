@@ -62,6 +62,21 @@ export default function SplashScreen({ onSandboxCreated }) {
     }
   }
 
+  // Delete a project
+  const handleDeleteProject = async (e, projectId) => {
+    e.stopPropagation() // Prevent triggering handleOpenProject
+    try {
+      const res = await fetch(`/api/sandbox/project/${projectId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+      if (!res.ok) throw new Error('Failed to delete project')
+      setProjects(projects.filter(p => p._id !== projectId))
+    } catch (err) {
+      setError(err.message || 'Failed to delete project')
+    }
+  }
+
   // Create new project then start its sandbox
   const handleCreate = async () => {
     const projectTitle = title.trim()
@@ -233,13 +248,11 @@ export default function SplashScreen({ onSandboxCreated }) {
                 <p className="text-xs font-medium uppercase tracking-widest mb-3 text-left" style={{ color: '#475569' }}>
                   Recent Projects
                 </p>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 overflow-y-auto pr-1" style={{ maxHeight: '200px' }}>
                   {projects.map(project => (
-                    <button
+                    <div
                       key={project._id}
-                      onClick={() => handleOpenProject(project._id)}
-                      disabled={isAnyLoading}
-                      className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-left transition-all duration-200 cursor-pointer group"
+                      className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-left transition-all duration-200 group relative"
                       style={{
                         background: 'rgba(255,255,255,0.03)',
                         border: '1px solid #1e2d45',
@@ -253,7 +266,11 @@ export default function SplashScreen({ onSandboxCreated }) {
                         e.currentTarget.style.borderColor = '#1e2d45'
                       }}
                     >
-                      <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => handleOpenProject(project._id)}
+                        disabled={isAnyLoading}
+                        className="flex-1 flex items-center gap-3 cursor-pointer outline-none bg-transparent text-left"
+                      >
                         <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                           style={{ background: 'rgba(34,211,238,0.08)', border: '1px solid rgba(34,211,238,0.15)' }}>
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="2">
@@ -264,20 +281,39 @@ export default function SplashScreen({ onSandboxCreated }) {
                           </svg>
                         </div>
                         <span className="text-sm font-medium" style={{ color: '#cbd5e1' }}>{project.title}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
+                      </button>
+                      <div className="flex items-center gap-4 shrink-0 relative z-10">
                         {loadingProjectId === project._id ? (
                           <div className="w-4 h-4 rounded-full border-2 border-t-transparent"
                             style={{ borderColor: '#22d3ee', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
                         ) : (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2"
-                            style={{ transition: 'stroke 0.2s' }}
-                            className="group-hover:stroke-cyan-400">
-                            <polygon points="5 3 19 12 5 21 5 3"/>
-                          </svg>
+                          <button
+                            onClick={() => handleOpenProject(project._id)}
+                            disabled={isAnyLoading}
+                            className="cursor-pointer"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2"
+                              style={{ transition: 'stroke 0.2s' }}
+                              className="group-hover:stroke-cyan-400">
+                              <polygon points="5 3 19 12 5 21 5 3"/>
+                            </svg>
+                          </button>
                         )}
+                        <button
+                          onClick={(e) => handleDeleteProject(e, project._id)}
+                          disabled={isAnyLoading}
+                          className="cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                          title="Delete Project"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                          </svg>
+                        </button>
                       </div>
-                    </button>
+                    </div>
                   ))}
                 </div>
 

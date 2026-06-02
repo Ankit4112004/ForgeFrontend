@@ -9,6 +9,7 @@ export default function Terminal({ sandboxId }) {
   const termRef = useRef(null)
   const fitAddonRef = useRef(null)
   const socketRef = useRef(null)
+  const animationInterval = useRef(null)
   const [connected, setConnected] = useState(false)
   const [error, setError] = useState(null)
 
@@ -58,11 +59,9 @@ export default function Terminal({ sandboxId }) {
     termRef.current = term
     fitAddonRef.current = fitAddon
 
-    term.writeln('\x1b[36m╔══════════════════════════════════════╗\x1b[0m')
-    term.writeln('\x1b[36m║   \x1b[1mSandbox Terminal\x1b[0m\x1b[36m                  ║\x1b[0m')
-    term.writeln('\x1b[36m╚══════════════════════════════════════╝\x1b[0m')
+    term.writeln('\x1b[1m\x1b[36mWelcome to Sandbox Terminal\x1b[0m')
+    term.writeln('\x1b[90mPowered by AI • Isolated Runtime\x1b[0m')
     term.writeln('')
-    term.writeln('\x1b[33mConnecting to sandbox...\x1b[0m')
 
     return term
   }, [])
@@ -81,22 +80,37 @@ export default function Terminal({ sandboxId }) {
 
       socketRef.current = socket
 
+      let dots = 0;
+      const animateConnecting = () => {
+        const dotStr = '.'.repeat(dots % 4);
+        // \r goes to start of line, \x1b[K clears line to the right
+        term.write(`\r\x1b[K\x1b[33mConnecting to sandbox${dotStr}\x1b[0m`);
+        dots++;
+      };
+
+      if (animationInterval.current) clearInterval(animationInterval.current);
+      animationInterval.current = setInterval(animateConnecting, 400);
+
       socket.on('connect', () => {
+        if (animationInterval.current) clearInterval(animationInterval.current);
         setConnected(true)
         setError(null)
-        term.writeln('\x1b[32m✓ Connected to sandbox shell\x1b[0m')
-        term.writeln('')
+        term.write('\r\x1b[K\x1b[32m✓ Connected to sandbox shell\x1b[0m\r\n\n')
+        // Send a carriage return to force bash to print the prompt immediately
+        socket.emit('terminal-input', '\r')
       })
 
       socket.on('disconnect', () => {
         setConnected(false)
         term.writeln('\r\n\x1b[33m⚠ Disconnected. Reconnecting...\x1b[0m')
+        if (animationInterval.current) clearInterval(animationInterval.current);
+        animationInterval.current = setInterval(animateConnecting, 400);
       })
 
       socket.on('connect_error', (err) => {
         setConnected(false)
         setError('Connection failed')
-        term.writeln(`\r\n\x1b[31m✗ Connection error: ${err.message}\x1b[0m`)
+        // We do NOT write the error to the terminal. The animation continues running.
       })
 
       socket.on('terminal-output', (data) => {
@@ -117,6 +131,7 @@ export default function Terminal({ sandboxId }) {
     if (term) connectSocket(term)
 
     return () => {
+      if (animationInterval.current) clearInterval(animationInterval.current)
       if (socketRef.current) { socketRef.current.disconnect(); socketRef.current = null }
       if (termRef.current) { termRef.current.dispose(); termRef.current = null }
     }

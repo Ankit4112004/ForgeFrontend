@@ -51,6 +51,9 @@ build:
     context: sandbox/server
     docker:
       dockerfile: dockerfile
+    sync:
+      infer:
+        - "src/**"
 
   - image: template
     context: sandbox/template

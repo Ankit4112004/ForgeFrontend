@@ -63,5 +63,20 @@ router.get("/project", async (req, res) => {
     })
 })
 
+router.delete("/project/:id", async (req, res) => {
+    const projectId = req.params.id;
+
+    // Verify that the project belongs to the authenticated user before deleting
+    const project = await Project.findOneAndDelete({ _id: projectId, user: req.user.id });
+
+    if (!project) {
+        return res.status(404).json({ message: 'Project not found or access denied' });
+    }
+
+    return res.status(200).json({
+        message: 'Project deleted successfully'
+    })
+})
+
 
 export default router;
