@@ -22,14 +22,15 @@ build:
     sync:
       infer:
         - "src/**"
-        
+
   - image: notification
     context: notification
     docker:
       dockerfile: dockerfile
     sync:
       infer:
-        - "src/**"      
+        - "src/**"
+
 
   - image: agent
     context: sandbox/agent
@@ -62,11 +63,18 @@ manifests:
     - k8s/ai-service.yml
     - k8s/auth-deployment.yml
     - k8s/auth-service.yml
+    - k8s/notification-deployment.yml
+    - k8s/notification-service.yml
+
     - k8s/sandbox-deployment.yml
     - k8s/sandbox-service.yml
     - k8s/ingress.yml
     - k8s/router-deployment.yml
     - k8s/router-service.yml
     - k8s/rbac.yml
-    - k8s/notification-deployment.yml
-    - k8s/notification-service.yml
+portForward:
+  - resourceType: service
+    resourceName: ingress-nginx-controller
+    namespace: ingress-nginx
+    port: 80
+    localPort: 8080

@@ -70,7 +70,7 @@ export default function Terminal({ sandboxId }) {
   const connectSocket = useCallback((term) => {
     if (!sandboxId || !term) return
 
-    const agentHost = `http://${sandboxId}.agent.localhost`
+    const agentHost = `http://${sandboxId}.agent.localhost:8080`
 
     try {
       const socket = io(agentHost, {

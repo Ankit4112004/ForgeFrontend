@@ -116,6 +116,8 @@ async function init() {
         startWatcher(hasFiles);
     } catch (error) {
         console.error("Error during initialization:", error);
+        console.warn("S3 unavailable — running without file sync.");
+        startWatcher(false);
     }
 }
 

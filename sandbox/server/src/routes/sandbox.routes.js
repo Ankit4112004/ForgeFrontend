@@ -10,8 +10,9 @@ import Project from "../models/project.model.js";
 
 const router = Router();
 
+router.use(authMiddleware);
 
-router.post('/project', authMiddleware, async (req, res) => {
+router.post('/project', async (req, res) => {
     const { title } = req.body;
 
     const newProject = new Project({
@@ -27,7 +28,7 @@ router.post('/project', authMiddleware, async (req, res) => {
     });
 })
 
-router.post("/start", authMiddleware, async (req, res) => {
+router.post("/start", async (req, res) => {
 
     const projectId = req.body.projectId;
 
@@ -49,11 +50,11 @@ router.post("/start", authMiddleware, async (req, res) => {
     return res.status(201).json({
         message: 'Sandbox environment created successfully',
         sandboxId,
-        previewUrl: `http://${sandboxId}.preview.localhost`
+        previewUrl: `http://${sandboxId}.preview.localhost:8080`
     })
 })
 
-router.get("/project", authMiddleware, async (req, res) => {
+router.get("/project", async (req, res) => {
     const projects = await Project.find({ user: req.user.id });
 
     return res.status(200).json({

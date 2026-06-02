@@ -15,7 +15,7 @@ export default defineConfig({
     proxy: {
       // REST API — forwarded to the K8s ingress (skaffold dev)
       "/api": {
-        target: "http://127.0.0.1:80",
+        target: "http://localhost:8080",
         changeOrigin: true,
         secure: false,
         configure: (proxy) => {

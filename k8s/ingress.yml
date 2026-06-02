@@ -43,6 +43,7 @@ spec:
             name: ai-service
             port: 
               number: 80
+
   - http:
       paths:
       - pathType: Prefix
@@ -52,7 +53,6 @@ spec:
             name: auth-service
             port: 
               number: 80
-
 
   - host: "*.preview.localhost"
     http:
