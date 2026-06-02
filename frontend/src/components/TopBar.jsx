@@ -1,4 +1,4 @@
-export default function TopBar({ sandboxId, activeTab, onTabChange, status }) {
+export default function TopBar({ sandboxId, activeTab, onTabChange, status, onLogout }) {
   const shortId = sandboxId ? sandboxId.slice(0, 8) + '…' : ''
 
   const statusConfig = {
@@ -76,6 +76,18 @@ export default function TopBar({ sandboxId, activeTab, onTabChange, status }) {
           )}
           <span className="text-xs" style={{ color: s.color }}>{s.label}</span>
         </div>
+        {onLogout && (
+          <button 
+            onClick={onLogout}
+            className="ml-3 px-3 py-1 text-xs font-medium rounded-md cursor-pointer transition-colors hover:text-white"
+            style={{
+              color: '#94a3b8',
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.2)'
+            }}>
+            Logout
+          </button>
+        )}
       </div>
     </header>
   )

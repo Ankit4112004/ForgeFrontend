@@ -59,6 +59,15 @@ export default function App() {
     document.addEventListener('mouseup', onUp)
   }
 
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout')
+      setSandbox(null)
+    } catch (err) {
+      console.error('Failed to logout', err)
+    }
+  }
+
   // Landing / splash
   if (!sandbox) {
     return <SplashScreen onSandboxCreated={handleSandboxCreated} />
@@ -76,6 +85,7 @@ export default function App() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         status={status}
+        onLogout={handleLogout}
       />
 
       {/* Main layout */}
