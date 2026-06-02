@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { createPod } from '../kubernetes/pod.js';
-import { createService } from '../kubernetes/service.js';
+import { createPod, deletePod } from '../kubernetes/pod.js';
+import { createService, deleteService } from '../kubernetes/service.js';
 import { createSandboxKey } from '../config/redis.js';
 import { v7 as uuid } from "uuid"
 import { authMiddleware } from "../middlewares/auth.middleware.js";
@@ -39,6 +39,14 @@ router.post("/start", async (req, res) => {
         return res.status(404).json({ message: 'Project not found or access denied' });
     }
 
+    if (project.sandboxId) {
+        return res.status(200).json({
+            message: 'Sandbox environment already running',
+            sandboxId: project.sandboxId,
+            previewUrl: `http://${project.sandboxId}.preview.localhost:8080`
+        });
+    }
+
     const sandboxId = uuid();
 
     await Promise.all([
@@ -46,6 +54,9 @@ router.post("/start", async (req, res) => {
         createService(sandboxId),
         createSandboxKey(sandboxId)
     ]);
+
+    project.sandboxId = sandboxId;
+    await project.save();
 
     return res.status(201).json({
         message: 'Sandbox environment created successfully',
@@ -71,6 +82,13 @@ router.delete("/project/:id", async (req, res) => {
 
     if (!project) {
         return res.status(404).json({ message: 'Project not found or access denied' });
+    }
+
+    if (project.sandboxId) {
+        await Promise.all([
+            deletePod(project.sandboxId),
+            deleteService(project.sandboxId)
+        ]).catch(e => console.error("Failed to delete K8s resources:", e));
     }
 
     return res.status(200).json({

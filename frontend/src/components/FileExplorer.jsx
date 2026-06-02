@@ -91,23 +91,34 @@ export default function FileExplorer({ agentBase, activeFile, onFileSelect, refr
   const [error, setError] = useState(null)
   const [tree, setTree] = useState({})
 
-  const fetchFiles = useCallback(async () => {
+  const fetchFiles = useCallback(() => {
     if (!agentBase) return
+    let isCancelled = false
     setLoading(true)
     setError(null)
-    try {
-      const res = await fetch(`${agentBase}/list-files`)
-      const data = await res.json()
-      setFiles(data.files || [])
-      setTree(buildTree(data.files || []))
-    } catch (err) {
-      setError('Failed to load files')
-    } finally {
-      setLoading(false)
+    
+    const poll = async () => {
+      try {
+        const res = await fetch(`${agentBase}/list-files`)
+        if (!res.ok) throw new Error('Not ready')
+        const data = await res.json()
+        if (isCancelled) return
+        setFiles(data.files || [])
+        setTree(buildTree(data.files || []))
+        setLoading(false)
+      } catch (err) {
+        if (!isCancelled) setTimeout(poll, 1500)
+      }
     }
+    
+    poll()
+    return () => { isCancelled = true }
   }, [agentBase])
 
-  useEffect(() => { fetchFiles() }, [fetchFiles, refreshKey])
+  useEffect(() => { 
+    const cancel = fetchFiles()
+    return () => { if (cancel) cancel() }
+  }, [fetchFiles, refreshKey])
 
   return (
     <aside className="flex flex-col h-full"
@@ -132,11 +143,19 @@ export default function FileExplorer({ agentBase, activeFile, onFileSelect, refr
       </div>
 
       {/* File Tree */}
-      <div className="flex-1 overflow-y-auto py-1">
+      <div className="flex-1 overflow-y-auto py-1 relative">
         {loading ? (
-          <div className="flex items-center justify-center h-20">
-            <div className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin"
-              style={{ borderColor: '#22d3ee', borderTopColor: 'transparent' }} />
+          <div className="absolute inset-0 flex flex-col items-center pt-20 gap-4 opacity-80">
+            <div className="relative w-8 h-8 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-md border border-cyan-500 animate-ping opacity-20" />
+              <div className="absolute inset-1 rounded border border-cyan-400 animate-pulse opacity-50" />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="2" className="animate-bounce">
+                <path d="M2 12h4l2-3 4 6 2-3h4" />
+              </svg>
+            </div>
+            <span className="text-[10px] font-mono text-cyan-400 uppercase tracking-widest animate-pulse">
+              Mounting Vol...
+            </span>
           </div>
         ) : error ? (
           <div className="px-3 py-4 text-xs" style={{ color: '#ef4444' }}>{error}</div>

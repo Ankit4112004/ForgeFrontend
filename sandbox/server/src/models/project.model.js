@@ -8,6 +8,10 @@ const projectSchema = new mongoose.Schema({
     title: {
         type: String,
         default: "Untitled Project"
+    },
+    sandboxId: {
+        type: String,
+        default: null
     }
 });
 
