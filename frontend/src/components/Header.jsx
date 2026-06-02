@@ -1,44 +1,34 @@
 import { motion } from 'framer-motion'
-import { PanelLeft, Save, RefreshCw, MoreHorizontal, ExternalLink } from 'lucide-react'
-import { useState, useRef, useEffect } from 'react'
+import { PanelLeft, Save, RefreshCw, ExternalLink, Sparkles, Box } from 'lucide-react'
 
 export default function Header({
   activeTab,
   onTabChange,
   isSidebarOpen,
   onToggleSidebar,
-  status,
   onRefreshPreview,
-  previewUrl
+  previewUrl,
+  isAiChatOpen,
+  onToggleAiChat,
+  projectTitle
 }) {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const menuRef = useRef(null)
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setMenuOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
   return (
-    <header className="flex items-center justify-between px-4 py-2 shrink-0"
-      style={{ zIndex: 10, background: 'transparent' }}>
+    <header className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 py-3 pointer-events-none"
+      style={{ zIndex: 20, background: 'transparent' }}>
       
-      {/* Left: Sidebar Toggle */}
-      <div className="flex items-center gap-3">
-        {!isSidebarOpen && (
-          <button onClick={onToggleSidebar} className="text-gray-400 hover:text-white transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-white/5">
-            <PanelLeft size={18} />
-          </button>
+      {/* Left: Project Name */}
+      <div className="flex items-center gap-3 pointer-events-auto">
+        {projectTitle && (
+          <div className="flex items-center gap-2 px-4 py-1.5 rounded-full backdrop-blur-md text-sm font-semibold shadow-sm"
+            style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-secondary)' }}>
+            <Box size={16} style={{ color: 'var(--accent)' }} />
+            {projectTitle}
+          </div>
         )}
       </div>
 
       {/* Center: Liquid Glass Pill Toggle for Preview/Code */}
-      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 pill-toggle">
+      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 pill-toggle pointer-events-auto p-1 rounded-full backdrop-blur-md" style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)' }}>
         <button
           onClick={() => onTabChange('preview')}
           className="relative px-5 py-1.5 text-xs font-semibold rounded-full transition-colors cursor-pointer z-10"
@@ -71,57 +61,37 @@ export default function Header({
         </button>
       </div>
 
-      {/* Right: Actions */}
-      <div className="flex items-center gap-2">
-        {/* Refresh */}
+      {/* Right: Refresh, Open External, AI Chat Toggle */}
+      <div className="flex items-center gap-1.5 pointer-events-auto backdrop-blur-md p-1 rounded-xl" style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)' }}>
         <button
           onClick={onRefreshPreview}
           className="text-gray-400 hover:text-white transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-white/5"
           title="Refresh preview"
         >
-          <RefreshCw size={16} />
+          <RefreshCw size={15} />
         </button>
 
-        {/* Three-dot menu */}
-        <div className="relative" ref={menuRef}>
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
+        {previewUrl && (
+          <a
+            href={previewUrl}
+            target="_blank"
+            rel="noreferrer"
             className="text-gray-400 hover:text-white transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-white/5"
+            title="Open in new window"
           >
-            <MoreHorizontal size={16} />
-          </button>
-          {menuOpen && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: -4 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              className="absolute right-0 mt-2 w-48 rounded-xl border py-1 z-50"
-              style={{
-                background: '#2C2C2A',
-                borderColor: 'rgba(255,255,255,0.08)',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
-              }}
-            >
-              {previewUrl && (
-                <a
-                  href={previewUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-2 px-3 py-2 text-xs text-gray-300 hover:bg-white/5 transition-colors cursor-pointer"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  <ExternalLink size={14} />
-                  Open in new tab
-                </a>
-              )}
-            </motion.div>
-          )}
-        </div>
+            <ExternalLink size={15} />
+          </a>
+        )}
 
-        {/* Save Button */}
-        <button className="flex items-center gap-2 btn-claude text-sm">
-          <Save size={15} />
-          Save
-        </button>
+        {!isAiChatOpen && (
+          <button
+            onClick={onToggleAiChat}
+            className="text-gray-400 hover:text-[var(--accent)] transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-white/5"
+            title="Open AI Assistant"
+          >
+            <Sparkles size={16} />
+          </button>
+        )}
       </div>
     </header>
   )

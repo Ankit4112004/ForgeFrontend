@@ -15,10 +15,20 @@ spec:
         app: sandbox
     spec:
       serviceAccountName: resource-manager
+      volumes:
+        # Same node-local store the sync-agent uses, so we can delete a
+        # project's persisted files when the project is deleted.
+        - name: persist-volume
+          hostPath:
+            path: /mnt/sandbox-data
+            type: DirectoryOrCreate
       containers:
       - image:  sandbox
         imagePullPolicy: IfNotPresent
         name:  main-sandbox-container
+        volumeMounts:
+          - name: persist-volume
+            mountPath: /persist
         resources:
           limits:
             cpu: "500m"

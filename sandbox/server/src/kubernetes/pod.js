@@ -15,6 +15,16 @@ export async function createPod(sandboxId, projectId) {
                 {
                     name: 'workspace-volume',
                     emptyDir: {}
+                },
+                {
+                    // Persistent local store on the node, shared by all sandboxes.
+                    // The sync-agent keeps each project's files under /persist/<projectId>
+                    // so they survive pod restarts.
+                    name: 'persist-volume',
+                    hostPath: {
+                        path: '/mnt/sandbox-data',
+                        type: 'DirectoryOrCreate'
+                    }
                 }
             ],
             initContainers: [
@@ -77,40 +87,16 @@ export async function createPod(sandboxId, projectId) {
                         {
                             name: 'workspace-volume',
                             mountPath: '/workspace'
+                        },
+                        {
+                            name: 'persist-volume',
+                            mountPath: '/persist'
                         }
                     ],
                     env: [
                         {
                             name: "PROJECT_ID",
                             value: projectId
-                        },
-                        {
-                            name: "AWS_ACCESS_KEY_ID",
-                            valueFrom: {
-                                secretKeyRef: {
-                                    name: "aws",
-                                    key: "AWS_ACCESS_KEY_ID"
-                                }
-                            }
-                        },
-                        {
-                            name: "AWS_SECRET_ACCESS_KEY",
-                            valueFrom: {
-                                secretKeyRef: {
-                                    name: "aws",
-                                    key: "AWS_SECRET_ACCESS_KEY"
-                                }
-                            }
-
-                        },
-                        {
-                            name: "AWS_REGION",
-                            valueFrom: {
-                                secretKeyRef: {
-                                    name: "aws",
-                                    key: "AWS_REGION"
-                                }
-                            }
                         }
                     ]
                 }

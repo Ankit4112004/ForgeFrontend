@@ -1,10 +1,16 @@
 import { Router } from "express";
+import fs from "fs";
+import path from "path";
 import { createPod, deletePod, checkPodExists } from '../kubernetes/pod.js';
 import { createService, deleteService } from '../kubernetes/service.js';
 import { createSandboxKey } from '../config/redis.js';
 import { v7 as uuid } from "uuid"
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import Project from "../models/project.model.js";
+
+// Node-local store where the sync-agent persists each project's files
+// (mounted from the same hostPath as the sandbox pods).
+const PERSIST_DIR = "/persist";
 
 
 
@@ -92,6 +98,15 @@ router.delete("/project/:id", async (req, res) => {
             deletePod(project.sandboxId),
             deleteService(project.sandboxId)
         ]).catch(e => console.error("Failed to delete K8s resources:", e));
+    }
+
+    // Remove the project's persisted files from the local store so deleted
+    // projects don't leave orphaned data accumulating on disk.
+    try {
+        const persistedPath = path.join(PERSIST_DIR, projectId);
+        await fs.promises.rm(persistedPath, { recursive: true, force: true });
+    } catch (e) {
+        console.error("Failed to delete persisted project files:", e);
     }
 
     return res.status(200).json({

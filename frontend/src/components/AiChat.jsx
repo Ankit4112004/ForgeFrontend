@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Sparkles, Send, FileCode, CheckCircle2, ArrowUp } from 'lucide-react'
+import { Sparkles, Send, FileCode, CheckCircle2, ArrowUp, X } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 function TypingIndicator() {
   return (
@@ -36,19 +38,50 @@ function ActivityLog({ lines }) {
 function Message({ msg }) {
   const isUser = msg.role === 'user'
   return (
-    <div className={`flex gap-3 animate-fadeIn w-full ${isUser ? 'flex-row-reverse' : ''}`}>
+    <div className={`flex gap-4 animate-fadeIn w-full ${isUser ? 'flex-row-reverse' : ''}`}>
       {!isUser && (
-        <div className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center" style={{ background: 'var(--accent)', color: 'white' }}>
-          <Sparkles size={14} />
+        <div className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center shadow-sm" style={{ background: 'var(--accent)', color: 'white' }}>
+          <Sparkles size={16} />
         </div>
       )}
       <div className={`max-w-[85%] flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
-        <div className={`px-4 py-2.5 rounded-2xl text-[14px] leading-relaxed ${isUser ? 'text-white rounded-tr-sm' : 'text-gray-200'}`}
+        <div className={`px-4 py-3 rounded-2xl text-[14px] leading-relaxed ${isUser ? 'text-white' : 'text-gray-200 w-full'}`}
           style={{
-            background: isUser ? 'rgba(255,255,255,0.08)' : 'transparent'
+            background: isUser ? '#2C2C2A' : 'transparent',
+            border: isUser ? '1px solid rgba(255,255,255,0.06)' : 'none'
           }}
         >
-          {msg.content}
+          {isUser ? (
+            <div className="whitespace-pre-wrap">{msg.content}</div>
+          ) : (
+            <div className="markdown-body prose prose-invert max-w-none text-gray-200">
+              <ReactMarkdown 
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  code({node, inline, className, children, ...props}) {
+                    return !inline ? (
+                      <pre className="bg-black/30 p-3 rounded-lg my-2 overflow-x-auto text-xs font-mono border border-white/5">
+                        <code {...props} className={className}>
+                          {children}
+                        </code>
+                      </pre>
+                    ) : (
+                      <code className="bg-black/30 px-1.5 py-0.5 rounded text-[13px] text-gray-300 font-mono" {...props}>
+                        {children}
+                      </code>
+                    )
+                  },
+                  p: ({children}) => <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>,
+                  ul: ({children}) => <ul className="list-disc pl-4 mb-3 space-y-1">{children}</ul>,
+                  ol: ({children}) => <ol className="list-decimal pl-4 mb-3 space-y-1">{children}</ol>,
+                  li: ({children}) => <li className="leading-relaxed">{children}</li>,
+                  h3: ({children}) => <h3 className="text-white font-semibold mt-4 mb-2">{children}</h3>,
+                }}
+              >
+                {msg.content}
+              </ReactMarkdown>
+            </div>
+          )}
         </div>
         {msg.activity && msg.activity.length > 0 && (
           <ActivityLog lines={msg.activity} />
@@ -66,7 +99,7 @@ function parseActivityLine(line) {
   return { type: 'info', text: line }
 }
 
-export default function AiChat({ sandboxId, onFilesChanged }) {
+export default function AiChat({ sandboxId, onFilesChanged, onClose }) {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -100,12 +133,17 @@ export default function AiChat({ sandboxId, onFilesChanged }) {
     let aiContent = ''
     let activityLines = []
 
+    const history = messages
+      .filter(m => m.role !== 'system' && !m.pending && m.content)
+      .map(m => ({ role: m.role, content: m.content }))
+    history.push({ role: 'user', content: text })
+
     try {
       const response = await fetch('/api/ai/invoke', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ message: text, projectId: sandboxId })
+        body: JSON.stringify({ message: text, messages: history, projectId: sandboxId })
       })
 
       if (!response.ok) throw new Error(`Server error: ${response.status}`)
@@ -177,9 +215,17 @@ export default function AiChat({ sandboxId, onFilesChanged }) {
   return (
     <div className="flex flex-col h-full" style={{ background: '#1F1F1D' }}>
       {/* Header */}
-      <div className="flex items-center justify-center px-4 py-3 shrink-0"
+      <div className="flex items-center justify-between px-4 py-3 shrink-0"
         style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-        <h2 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>AI Assistant</h2>
+        <div className="flex items-center gap-2">
+          <Sparkles size={16} style={{ color: 'var(--accent)' }} />
+          <h2 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>AI Assistant</h2>
+        </div>
+        {onClose && (
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors cursor-pointer">
+            <X size={16} />
+          </button>
+        )}
       </div>
 
       {/* Messages */}

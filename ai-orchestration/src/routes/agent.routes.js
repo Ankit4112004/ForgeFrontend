@@ -4,7 +4,7 @@ import agent from "../agents/code.agent.js";
 const agentRouter = Router();
 
 agentRouter.post("/invoke", async (req, res) => {
-    const { message, projectId } = req.body;
+    const { message, messages, projectId } = req.body;
 
     res.writeHead(200, {
         'Content-Type': 'text/event-stream',
@@ -15,8 +15,9 @@ agentRouter.post("/invoke", async (req, res) => {
     const writer = (text) => res.write(text);
 
     try {
+        const inputMessages = messages || [ { role: "user", content: message } ];
         const stream = await agent.stream(
-            { messages: [ { role: "user", content: message } ] },
+            { messages: inputMessages },
             { context: { projectId, writer }, streamMode: "values" }
         );
 

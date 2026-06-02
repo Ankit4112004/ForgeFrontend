@@ -53,7 +53,8 @@ export default function SplashScreen({ onSandboxCreated }) {
       })
       if (!sandboxRes.ok) throw new Error(`Failed to start sandbox (${sandboxRes.status})`)
       const sandboxData = await sandboxRes.json()
-      onSandboxCreated(sandboxData)
+      const project = projects.find(p => p._id === projectId)
+      onSandboxCreated({ ...sandboxData, title: project ? project.title : 'Untitled' })
     } catch (err) {
       setError(err.message || 'Failed to start sandbox')
       setLoadingProjectId(null)
@@ -103,7 +104,7 @@ export default function SplashScreen({ onSandboxCreated }) {
       })
       if (!sandboxRes.ok) throw new Error(`Failed to start sandbox (${sandboxRes.status})`)
       const sandboxData = await sandboxRes.json()
-      onSandboxCreated(sandboxData)
+      onSandboxCreated({ ...sandboxData, title: projectTitle })
     } catch (err) {
       setError(err.message || 'Failed to create sandbox')
       setLoading(false)
@@ -124,7 +125,7 @@ export default function SplashScreen({ onSandboxCreated }) {
   const isAnyLoading = loading || loadingProjectId !== null
 
   return (
-    <div className="relative flex flex-col items-center justify-center h-full w-full overflow-hidden" style={{ background: 'var(--bg-base)' }}>
+    <div className="relative flex flex-col items-center justify-center h-full w-full overflow-hidden" style={{ background: '#1F1F1D' }}>
       {/* Logout Button */}
       {isAuthenticated && !isAnyLoading && (
         <button 
@@ -135,7 +136,7 @@ export default function SplashScreen({ onSandboxCreated }) {
         </button>
       )}
 
-      {/* Main content wrapped in framer-motion */}
+      {/* Main content */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -145,17 +146,18 @@ export default function SplashScreen({ onSandboxCreated }) {
       >
         {/* Logo */}
         <div className="relative">
-          <div className="w-20 h-20 rounded-3xl flex items-center justify-center bg-orange-500 shadow-[0_0_40px_rgba(249,115,22,0.3)]">
+          <div className="w-20 h-20 rounded-3xl flex items-center justify-center shadow-lg"
+            style={{ background: 'var(--accent)', boxShadow: '0 0 40px var(--accent-glow-bright)' }}>
             <Box size={40} className="text-white" />
           </div>
         </div>
 
         {/* Title */}
         <div>
-          <h1 className="text-4xl font-bold tracking-tight mb-2 text-gray-100">
+          <h1 className="text-4xl font-bold tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>
             Sandbox IDE
           </h1>
-          <p className="text-base text-gray-400">
+          <p className="text-base" style={{ color: 'var(--text-muted)' }}>
             Spin up an isolated coding environment instantly.
           </p>
         </div>
@@ -165,48 +167,51 @@ export default function SplashScreen({ onSandboxCreated }) {
           <div className="w-full">
             {projectsLoading ? (
               <div className="w-full flex justify-center py-4">
-                <div className="w-5 h-5 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+                <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
               </div>
             ) : !isAuthenticated ? (
               <div className="w-full flex flex-col items-center mt-4">
                 <a href="/api/auth/google"
-                  className="btn-claude w-full py-4 rounded-xl text-base font-semibold flex items-center justify-center gap-3 text-center shadow-lg shadow-orange-500/20"
+                  className="btn-claude w-full py-4 rounded-xl text-base font-semibold flex items-center justify-center gap-3 text-center"
+                  style={{ boxShadow: '0 4px 20px var(--accent-glow-bright)' }}
                 >
                   Continue with Google
                 </a>
               </div>
             ) : projects.length > 0 && (
               <div className="w-full">
-                <p className="text-xs font-semibold uppercase tracking-widest mb-3 text-left text-gray-500">
+                <p className="text-xs font-semibold uppercase tracking-widest mb-3 text-left" style={{ color: 'var(--text-muted)' }}>
                   Recent Projects
                 </p>
                 <div className="flex flex-col gap-2 overflow-y-auto pr-1" style={{ maxHeight: '240px' }}>
                   {projects.map(project => (
                     <motion.div
-                      whileHover={{ scale: 1.02 }}
+                      whileHover={{ scale: 1.01 }}
                       key={project._id}
-                      className="w-full flex items-center justify-between px-4 py-3 liquid-glass-panel text-left group relative"
+                      className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-left group relative"
+                      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}
                     >
                       <button
                         onClick={() => handleOpenProject(project._id)}
                         disabled={isAnyLoading}
                         className="flex-1 flex items-center gap-3 cursor-pointer outline-none bg-transparent text-left"
                       >
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-white/5 border border-white/10 group-hover:bg-orange-500/10 group-hover:border-orange-500/30 transition-colors">
-                          <Folder size={16} className="text-gray-400 group-hover:text-orange-400" />
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors"
+                          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                          <Folder size={16} className="text-gray-400 group-hover:text-[var(--accent)]" style={{ transition: 'color 0.2s' }} />
                         </div>
                         <span className="text-sm font-medium text-gray-200 group-hover:text-white">{project.title}</span>
                       </button>
                       <div className="flex items-center gap-4 shrink-0 relative z-10">
                         {loadingProjectId === project._id ? (
-                          <div className="w-4 h-4 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+                          <div className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
                         ) : (
                           <button
                             onClick={() => handleOpenProject(project._id)}
                             disabled={isAnyLoading}
                             className="cursor-pointer"
                           >
-                            <Play size={16} className="text-gray-500 hover:text-orange-400 transition-colors" />
+                            <Play size={16} className="text-gray-500 hover:text-[var(--accent)]" style={{ transition: 'color 0.2s' }} />
                           </button>
                         )}
                         <button
@@ -224,9 +229,9 @@ export default function SplashScreen({ onSandboxCreated }) {
 
                 {/* Divider */}
                 <div className="flex items-center gap-3 my-6">
-                  <div className="flex-1 h-px bg-white/5" />
-                  <span className="text-xs text-gray-500 font-medium">OR CREATE NEW</span>
-                  <div className="flex-1 h-px bg-white/5" />
+                  <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.05)' }} />
+                  <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>OR CREATE NEW</span>
+                  <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.05)' }} />
                 </div>
               </div>
             )}
@@ -236,26 +241,30 @@ export default function SplashScreen({ onSandboxCreated }) {
         {/* New project input + CTA */}
         {isAuthenticated && !isAnyLoading ? (
           <div className="flex flex-col items-center gap-3 w-full" style={{ maxWidth: '420px' }}>
-            <div className="w-full liquid-glass-panel overflow-hidden transition-colors focus-within:border-orange-500/50">
+            <div className="w-full rounded-xl overflow-hidden transition-colors"
+              style={{ background: '#2C2C2A', border: '1px solid rgba(255,255,255,0.06)' }}>
               <input
                 type="text"
                 value={title}
                 onChange={e => { setTitle(e.target.value); setError(null) }}
                 onKeyDown={e => e.key === 'Enter' && handleCreate()}
                 placeholder="New project name…"
-                className="w-full outline-none bg-transparent px-5 py-3.5 text-sm text-gray-200"
+                className="w-full outline-none bg-transparent px-5 py-3.5 text-sm"
+                style={{ color: 'var(--text-primary)' }}
                 autoFocus={projects.length === 0}
               />
             </div>
-            <button onClick={handleCreate} className="btn-claude w-full py-3.5 rounded-xl text-base shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2">
+            <button onClick={handleCreate} className="btn-claude w-full py-3.5 rounded-xl text-base flex items-center justify-center gap-2"
+              style={{ boxShadow: '0 4px 20px var(--accent-glow-bright)' }}>
               <Plus size={18} /> Create Project
             </button>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-4 mt-4">
-            <div className="flex items-center gap-3 px-6 py-3 liquid-glass-panel text-orange-400">
-              <div className="w-5 h-5 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
-              <span className="text-sm font-medium text-gray-200">
+            <div className="flex items-center gap-3 px-6 py-3 rounded-xl"
+              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
+              <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                 {loadingProjectId
                   ? `Starting sandbox${dots}`
                   : loadingStep === 'project'
@@ -267,14 +276,14 @@ export default function SplashScreen({ onSandboxCreated }) {
         )}
 
         {error && (
-          <div className="px-5 py-3 rounded-lg text-sm bg-red-500/10 border border-red-500/30 text-red-400 w-full">
+          <div className="px-5 py-3 rounded-lg text-sm w-full" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444' }}>
             ⚠ {error}
           </div>
         )}
       </motion.div>
 
       {/* Bottom brand */}
-      <div className="absolute bottom-6 text-xs font-medium text-gray-500">
+      <div className="absolute bottom-6 text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
         Sandbox IDE • Powered by AI
       </div>
     </div>

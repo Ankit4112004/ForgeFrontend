@@ -24,6 +24,8 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isTerminalOpen, setIsTerminalOpen] = useState(false)
 
+  const [isAiChatOpen, setIsAiChatOpen] = useState(true)
+
   // Terminal resize
   const [terminalHeight, setTerminalHeight] = useState(250)
   const isDragging = useRef(false)
@@ -35,12 +37,17 @@ export default function App() {
 
   const handleSandboxCreated = useCallback((data) => {
     const agentBase = `http://${data.sandboxId}.agent.localhost:8080`
-    setSandbox({ sandboxId: data.sandboxId, previewUrl: data.previewUrl, agentBase })
+    setSandbox({ sandboxId: data.sandboxId, previewUrl: data.previewUrl, agentBase, title: data.title })
     setStatus('ready')
   }, [])
 
   const handleFilesChanged = useCallback(() => {
+    // Refresh the file explorer with the new/changed files
     setFileRefreshKey(k => k + 1)
+    // Reload the live preview iframe so the AI's result shows immediately
+    setPreviewRefreshKey(k => k + 1)
+    // Surface the result to the user without a manual tab switch
+    setActiveTab('preview')
   }, [])
 
   const handleFileSelect = useCallback((path) => {
@@ -113,7 +120,7 @@ export default function App() {
     return <SplashScreen onSandboxCreated={handleSandboxCreated} />
   }
 
-  const { sandboxId, previewUrl, agentBase } = sandbox
+  const { sandboxId, previewUrl, agentBase, title } = sandbox
 
   return (
     <div className="flex h-full w-full overflow-hidden" style={{ background: '#1F1F1D', color: 'var(--text-primary)' }}>
@@ -139,9 +146,11 @@ export default function App() {
           onTabChange={setActiveTab}
           isSidebarOpen={isSidebarOpen}
           onToggleSidebar={() => setIsSidebarOpen(true)}
-          status={status}
           onRefreshPreview={() => setPreviewRefreshKey(k => k + 1)}
           previewUrl={previewUrl}
+          isAiChatOpen={isAiChatOpen}
+          onToggleAiChat={() => setIsAiChatOpen(o => !o)}
+          projectTitle={title}
         />
 
         <div className="flex-1 overflow-hidden flex flex-col">
@@ -163,16 +172,16 @@ export default function App() {
               exit={{ height: 0, opacity: 0 }}
               transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
               className="w-full flex flex-col shrink-0"
-              style={{ borderTop: '1px solid rgba(255,255,255,0.04)', background: '#0d1117' }}
+              style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: '#1A1A1A' }}
             >
               <div
                 className="shrink-0 flex items-center justify-center cursor-row-resize select-none hover:bg-white/5 transition-colors"
-                style={{ height: '8px', zIndex: 10 }}
+                style={{ height: '6px', zIndex: 10 }}
                 onMouseDown={handleDragStart}
               >
-                <div className="w-12 h-1 rounded-full bg-gray-700" />
+                <div className="w-10 h-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.12)' }} />
               </div>
-              <div className="flex-1 overflow-hidden p-2 pt-0">
+              <div className="flex-1 overflow-hidden">
                 <Terminal sandboxId={sandboxId} />
               </div>
             </motion.div>
@@ -181,9 +190,22 @@ export default function App() {
       </div>
 
       {/* Right Sidebar: AI Chat */}
-      <div className="shrink-0 overflow-hidden" style={{ width: '380px', borderLeft: '1px solid rgba(255,255,255,0.04)' }}>
-        <AiChat sandboxId={sandboxId} onFilesChanged={handleFilesChanged} />
-      </div>
+      <AnimatePresence>
+        {isAiChatOpen && (
+          <motion.div 
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 380, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ type: 'spring', bounce: 0, duration: 0.3 }}
+            className="shrink-0 overflow-hidden" 
+            style={{ borderLeft: '1px solid rgba(255,255,255,0.04)' }}
+          >
+            <div style={{ width: '380px', height: '100%' }}>
+              <AiChat sandboxId={sandboxId} onFilesChanged={handleFilesChanged} onClose={() => setIsAiChatOpen(false)} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

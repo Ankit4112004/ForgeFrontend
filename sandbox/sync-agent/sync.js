@@ -1,84 +1,72 @@
 import "dotenv/config";
 import chokidar from 'chokidar';
-import { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
 import fs from 'fs';
 import path from 'path';
 
-const s3Client = new S3Client({
-    region: process.env.AWS_REGION,
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-    }
-});
-
 const projectId = process.env.PROJECT_ID;
-const bucketName = "cohort-codespace-bucket";
 const localDirectory = '/workspace';
+// Persistent local store (a hostPath volume on the node), one folder per project.
+// This survives sandbox pod restarts so a reopened project keeps its files.
+const persistDirectory = path.join('/persist', projectId || 'default');
 
-async function checkS3ForFiles() {
-    console.log(`Checking S3 for existing files in project: ${projectId}`);
-    const listCommand = new ListObjectsV2Command({
-        Bucket: bucketName,
-        Prefix: `${projectId}/`
-    });
-    const listResponse = await s3Client.send(listCommand);
-    return listResponse.Contents || [];
+const shouldSkip = (filePath) =>
+    filePath.includes('node_modules') || filePath.includes('.env');
+
+// Recursively collect all files under a directory (absolute paths).
+function listFilesRecursive(dir) {
+    const out = [];
+    if (!fs.existsSync(dir)) return out;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+            if (entry.name === 'node_modules' || entry.name === '.git') continue;
+            out.push(...listFilesRecursive(full));
+        } else {
+            out.push(full);
+        }
+    }
+    return out;
 }
 
-async function downloadFilesFromS3(s3Objects) {
-    console.log("Found existing files in S3. Syncing to local directory...");
-    for (const file of s3Objects) {
-        // Skip if it is a directory placeholder
-        if (file.Key.endsWith('/')) continue;
-
-        const getCommand = new GetObjectCommand({
-            Bucket: bucketName,
-            Key: file.Key
-        });
-        const getResponse = await s3Client.send(getCommand);
-
-        const relativePath = file.Key.replace(`${projectId}/`, '');
+// Restore the project's saved files from the persistent store into the workspace.
+function restoreFiles() {
+    const files = listFilesRecursive(persistDirectory);
+    console.log(`Restoring ${files.length} file(s) for project ${projectId} from local store...`);
+    for (const file of files) {
+        const relativePath = path.relative(persistDirectory, file);
         const localFilePath = path.join(localDirectory, relativePath);
-
-        // Ensure the local directory structure exists
         fs.mkdirSync(path.dirname(localFilePath), { recursive: true });
-
-        const writeStream = fs.createWriteStream(localFilePath);
-        getResponse.Body.pipe(writeStream);
-
-        await new Promise((resolve, reject) => {
-            writeStream.on('finish', resolve);
-            writeStream.on('error', reject);
-        });
-
-        console.log(`Downloaded ${file.Key} to ${localFilePath}`);
+        fs.copyFileSync(file, localFilePath);
+        console.log(`Restored ${relativePath}`);
     }
 }
 
-async function uploadFileToS3(filePath) {
+// Persist a single workspace file into the local store.
+function saveFile(filePath) {
     try {
-        const fileContent = fs.readFileSync(filePath);
+        if (shouldSkip(filePath)) return;
         const relativePath = path.relative(localDirectory, filePath);
-
-        if (filePath.includes('node_modules') || filePath.includes('.env')) {
-            return; // Skip syncing node_modules and .env files
-        }
-
-        console.log(filePath)
-        // Files will have the prefix of projectId
-        const s3Key = `${projectId}/${relativePath}`;
-
-        const command = new PutObjectCommand({
-            Bucket: bucketName,
-            Key: s3Key,
-            Body: fileContent
-        });
-
-        await s3Client.send(command);
-        console.log(`Successfully synced ${filePath} to s3://${bucketName}/${s3Key}`);
+        const destPath = path.join(persistDirectory, relativePath);
+        fs.mkdirSync(path.dirname(destPath), { recursive: true });
+        fs.copyFileSync(filePath, destPath);
+        console.log(`Saved ${relativePath} to local store`);
     } catch (err) {
-        console.error(`Error syncing ${filePath} to S3:`, err);
+        console.error(`Error saving ${filePath} to local store:`, err);
+    }
+}
+
+// Remove a file from the local store when it's deleted in the workspace.
+function removeFile(filePath) {
+    try {
+        if (shouldSkip(filePath)) return;
+        const relativePath = path.relative(localDirectory, filePath);
+        const destPath = path.join(persistDirectory, relativePath);
+        if (fs.existsSync(destPath)) {
+            fs.rmSync(destPath, { force: true });
+            console.log(`Removed ${relativePath} from local store`);
+        }
+    } catch (err) {
+        console.error(`Error removing ${filePath} from local store:`, err);
     }
 }
 
@@ -91,35 +79,34 @@ function startWatcher(hasFiles) {
             /\.env/          // ignore .env files
         ],
         persistent: true,
-        ignoreInitial: hasFiles // if S3 is empty (hasFiles is false), upload all existing local files
+        // If the store was empty (hasFiles is false), persist all existing local files now.
+        ignoreInitial: hasFiles
     }).on('all', async (event, filePath) => {
         if (event === 'add' || event === 'change') {
-            if (filePath.includes('node_modules') || filePath.includes('.env')) {
-                return; // Skip syncing node_modules and .env files
-            }
-            await uploadFileToS3(filePath);
+            saveFile(filePath);
+        } else if (event === 'unlink') {
+            removeFile(filePath);
         }
     });
 }
 
 async function init() {
     try {
-        const s3Objects = await checkS3ForFiles();
-        const hasFiles = s3Objects.length > 0;
+        fs.mkdirSync(persistDirectory, { recursive: true });
+        const hasFiles = listFilesRecursive(persistDirectory).length > 0;
 
         if (hasFiles) {
-            await downloadFilesFromS3(s3Objects);
+            restoreFiles();
         } else {
-            console.log("No files found in S3. Local files will be synced to S3 automatically.");
+            console.log("No saved files found. Local files will be persisted automatically.");
         }
 
         startWatcher(hasFiles);
     } catch (error) {
         console.error("Error during initialization:", error);
-        console.warn("S3 unavailable — running without file sync.");
+        console.warn("Local store unavailable — running without file persistence.");
         startWatcher(false);
     }
 }
 
 init();
-
