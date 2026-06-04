@@ -131,7 +131,7 @@ export default function SplashScreen({ onSandboxCreated }) {
 
   const handleSignIn = (e) => {
     e.preventDefault()
-    setError('Connection refused: Sandbox orchestration cluster and AI microservices are currently offline.')
+    setError('Sandbox orchestration cluster is currently offline.')
   }
 
   const isAnyLoading = loading || loadingProjectId !== null
