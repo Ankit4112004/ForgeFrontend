@@ -131,7 +131,7 @@ export default function SplashScreen({ onSandboxCreated }) {
 
   const handleSignIn = (e) => {
     e.preventDefault()
-    setError('Backend server is down — please try again later!')
+    setError('This is a static preview. The sandbox orchestration cluster is offline.')
   }
 
   const isAnyLoading = loading || loadingProjectId !== null
