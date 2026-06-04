@@ -131,7 +131,7 @@ export default function SplashScreen({ onSandboxCreated }) {
 
   const handleSignIn = (e) => {
     e.preventDefault()
-    setError('Connection refused: The authentication and AI microservices are currently offline.')
+    setError('This is a static preview. Connection refused: The authentication and AI microservices are currently offline.')
   }
 
   const isAnyLoading = loading || loadingProjectId !== null
