@@ -12,6 +12,9 @@ export default function SplashScreen({ onSandboxCreated }) {
   const [ isAuthenticated, setIsAuthenticated ] = useState(true)
   const [ projects, setProjects ] = useState([])
   const [ projectsLoading, setProjectsLoading ] = useState(true)
+  const [ serverDown, setServerDown ] = useState(false)
+  const [ email, setEmail ] = useState('')
+  const [ password, setPassword ] = useState('')
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -23,9 +26,13 @@ export default function SplashScreen({ onSandboxCreated }) {
           setIsAuthenticated(true)
         } else if (res.status === 401) {
           setIsAuthenticated(false)
+        } else {
+          // Server reachable but returned an unexpected error → treat as backend unavailable
+          setServerDown(true)
         }
       } catch {
-        setIsAuthenticated(false)
+        // Network error: no backend reachable (e.g. the static front-end-only deploy)
+        setServerDown(true)
       } finally {
         setProjectsLoading(false)
       }
@@ -122,7 +129,72 @@ export default function SplashScreen({ onSandboxCreated }) {
     }
   }
 
+  const handleSignIn = (e) => {
+    e.preventDefault()
+    setError('Backend server is down — please try again later!')
+  }
+
   const isAnyLoading = loading || loadingProjectId !== null
+
+  // When the backend can't be reached (e.g. the static front-end-only deploy),
+  // show a sign-in page that reports the server is offline when the user submits.
+  if (serverDown && !projectsLoading) {
+    return (
+      <div className="relative flex flex-col items-center justify-center h-full w-full overflow-hidden" style={{ background: '#1F1F1D' }}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          className="relative z-10 flex flex-col items-center gap-7 px-6 text-center w-full"
+          style={{ maxWidth: '400px' }}
+        >
+          {/* Logo */}
+          <div className="w-20 h-20 rounded-3xl flex items-center justify-center shadow-lg"
+            style={{ background: 'var(--accent)', boxShadow: '0 0 40px var(--accent-glow-bright)' }}>
+            <Box size={40} className="text-white" />
+          </div>
+
+          {/* Title */}
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>Sandbox IDE</h1>
+            <p className="text-base" style={{ color: 'var(--text-muted)' }}>Sign in to continue</p>
+          </div>
+
+          {/* Sign-in form */}
+          <form onSubmit={handleSignIn} className="flex flex-col gap-3 w-full">
+            <input
+              type="email" required value={email}
+              onChange={e => { setEmail(e.target.value); setError(null) }}
+              placeholder="Email"
+              className="w-full outline-none rounded-xl px-5 py-3.5 text-sm"
+              style={{ background: '#2C2C2A', border: '1px solid rgba(255,255,255,0.06)', color: 'var(--text-primary)' }}
+            />
+            <input
+              type="password" required value={password}
+              onChange={e => { setPassword(e.target.value); setError(null) }}
+              placeholder="Password"
+              className="w-full outline-none rounded-xl px-5 py-3.5 text-sm"
+              style={{ background: '#2C2C2A', border: '1px solid rgba(255,255,255,0.06)', color: 'var(--text-primary)' }}
+            />
+            <button type="submit" className="btn-claude w-full py-3.5 rounded-xl text-base font-semibold"
+              style={{ boxShadow: '0 4px 20px var(--accent-glow-bright)' }}>
+              Sign In
+            </button>
+          </form>
+
+          {error && (
+            <div className="px-5 py-3 rounded-lg text-sm w-full" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444' }}>
+              ⚠ {error}
+            </div>
+          )}
+        </motion.div>
+
+        <div className="absolute bottom-6 text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
+          Sandbox IDE • Powered by AI
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="relative flex flex-col items-center justify-center h-full w-full overflow-hidden" style={{ background: '#1F1F1D' }}>
