@@ -51,7 +51,7 @@ router.post("/start", async (req, res) => {
             return res.status(200).json({
                 message: 'Sandbox environment already running',
                 sandboxId: project.sandboxId,
-                previewUrl: `http://${project.sandboxId}.preview.localhost:8080`
+                previewUrl: `http://${project.sandboxId}.preview.${process.env.PUBLIC_BASE_HOST || 'localhost:8080'}`
             });
         }
     }
@@ -70,7 +70,7 @@ router.post("/start", async (req, res) => {
     return res.status(201).json({
         message: 'Sandbox environment created successfully',
         sandboxId,
-        previewUrl: `http://${sandboxId}.preview.localhost:8080`
+        previewUrl: `http://${sandboxId}.preview.${process.env.PUBLIC_BASE_HOST || 'localhost:8080'}`
     })
 })
 

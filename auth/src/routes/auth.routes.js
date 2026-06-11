@@ -49,7 +49,7 @@ router.get('/google/callback', passport.authenticate('google', {
             sameSite: 'lax',          // same-origin requests on localhost
             maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
         });
-        res.redirect('http://localhost:5173'); // Redirect to your frontend after successful login
+        res.redirect(process.env.FRONTEND_ORIGIN || 'http://localhost:5173'); // Redirect to your frontend after successful login
     } catch (err) {
         console.error('Error during Google authentication:', err);
         res.redirect('/'); // Redirect to your frontend on error
