@@ -15,8 +15,10 @@ sudo apt-get install -y curl ca-certificates git
 echo "==> [2/5] Opening ports 80/443 in the VM firewall"
 # Oracle's Ubuntu images ship iptables rules that REJECT everything except SSH.
 # (You ALSO need an ingress rule for 80/443 in the OCI Security List — see README.)
-sudo iptables -I INPUT -p tcp --dport 80 -j ACCEPT
-sudo iptables -I INPUT -p tcp --dport 443 -j ACCEPT
+for port in 80 443; do
+    sudo iptables -C INPUT -p tcp --dport "$port" -j ACCEPT 2>/dev/null \
+        || sudo iptables -I INPUT -p tcp --dport "$port" -j ACCEPT
+done
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y iptables-persistent
 sudo netfilter-persistent save || true
 

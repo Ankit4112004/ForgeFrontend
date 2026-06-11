@@ -74,11 +74,11 @@ kubectl create secret generic forge-secrets \
 
 echo "==> Applying manifests (BASE_HOST=$BASE_HOST)"
 TMP_DIR="$(mktemp -d)"
+trap 'rm -rf "$TMP_DIR"' EXIT
 for f in "$DEPLOY_DIR"/k8s/*.yml; do
     sed "s/__BASE_HOST__/$BASE_HOST/g" "$f" > "$TMP_DIR/$(basename "$f")"
 done
 kubectl apply -f "$TMP_DIR"
-rm -rf "$TMP_DIR"
 
 # Restart deployments so pods pick up freshly imported :latest images
 echo "==> Restarting deployments"
