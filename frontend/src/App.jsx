@@ -36,7 +36,7 @@ export default function App() {
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0)
 
   const handleSandboxCreated = useCallback((data) => {
-    const agentBase = `http://${data.sandboxId}.agent.localhost:8080`
+    const agentBase = `http://${data.sandboxId}.agent.${import.meta.env.VITE_PUBLIC_BASE_HOST || 'localhost:8080'}`
     setSandbox({ sandboxId: data.sandboxId, previewUrl: data.previewUrl, agentBase, title: data.title })
     setStatus('ready')
   }, [])

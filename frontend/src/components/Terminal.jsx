@@ -66,7 +66,7 @@ export default function Terminal({ sandboxId }) {
   const connectSocket = useCallback((term) => {
     if (!sandboxId || !term) return
 
-    const agentHost = `http://${sandboxId}.agent.localhost:8080`
+    const agentHost = `http://${sandboxId}.agent.${import.meta.env.VITE_PUBLIC_BASE_HOST || 'localhost:8080'}`
 
     try {
       const socket = io(agentHost, {
