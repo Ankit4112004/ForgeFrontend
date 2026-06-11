@@ -21,7 +21,6 @@ skills-lock.json
 !**/.env.example
 k8s/secrets.local.yml
 k8s/secrets.yml
-deploy/secrets.env
 
 # Dependencies
 node_modules/

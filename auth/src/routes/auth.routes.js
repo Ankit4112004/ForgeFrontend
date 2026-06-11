@@ -6,9 +6,6 @@ import jwt from "jsonwebtoken";
 
 const router = Router();
 
-// Send the auth cookie over HTTPS only when the app itself is served over HTTPS
-const SECURE_COOKIES = (process.env.FRONTEND_ORIGIN || '').startsWith('https://');
-
 
 router.get('/google', passport.authenticate('google', {
     session: false,
@@ -48,11 +45,11 @@ router.get('/google/callback', passport.authenticate('google', {
         // Set token in cookie
         res.cookie('token', token, {
             httpOnly: true,           // JS can't read it — XSS protection
-            secure: SECURE_COOKIES,
-            sameSite: 'lax',
+            secure: false,            // localhost doesn't use HTTPS
+            sameSite: 'lax',          // same-origin requests on localhost
             maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
         });
-        res.redirect(process.env.FRONTEND_ORIGIN || 'http://localhost:5173'); // Redirect to your frontend after successful login
+        res.redirect('http://localhost:5173'); // Redirect to your frontend after successful login
     } catch (err) {
         console.error('Error during Google authentication:', err);
         res.redirect('/'); // Redirect to your frontend on error
@@ -77,7 +74,7 @@ router.get('/me', async (req, res) => {
 router.get('/logout', (req, res) => {
     res.clearCookie('token', {
         httpOnly: true,
-        secure: SECURE_COOKIES,
+        secure: false,
         sameSite: 'lax',
     });
     res.status(200).json({ message: 'Logged out successfully' });
